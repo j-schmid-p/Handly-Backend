@@ -176,7 +176,15 @@ class AuthController extends Controller
             'token'=> $token,
             'user'=> $user
         ]);
+    }
 
+    public function logout (Request $request){
+        // borramos el token del user 
+        $request->user()->currentAccessToken()->delete();
 
+        return response()->json([
+            'status'=>'success',
+            'message'=>'sesion cerrada'
+        ])
     }
 }
