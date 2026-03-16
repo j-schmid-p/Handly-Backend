@@ -9,7 +9,7 @@ class ProfessionController extends Controller
 {
     public function index(){
         try {
-            $professions = DB::table('Profession')->get();
+            $professions = DB::table('Professions')->get();
 
             return response()->json([
                 'status'=>'success',
