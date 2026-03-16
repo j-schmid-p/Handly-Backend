@@ -11,7 +11,7 @@ Route::get('/users', [UserController::class, 'index']);
 Route::post('/register/client', [AuthController::class, 'registerClient']);
 Route::post('/register/professional', [AuthController::class, 'registerProfessional']);
 Route::post('/login', [AuthController::class, 'login']);
-Route::get('/professions',[AuthController::class, 'index']);
+Route::get('/professions',[ProfessionController::class, 'index']);
 
 
 // rutas protegidas (acceso mediante token)
@@ -22,8 +22,8 @@ Route::middleware('auth:sanctum')->group(function (){
     });
 
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/professionals', [AuthController::class, 'index']);
-    Route::get('/professionals/{id}', [AuthController::class, 'show']);
+    Route::get('/professionals', [ProfessionalController::class, 'index']);
+    Route::get('/professionals/{id}', [ProfessionalController::class, 'show']);
 
 });
 

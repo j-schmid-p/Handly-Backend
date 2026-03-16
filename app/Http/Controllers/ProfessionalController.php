@@ -7,10 +7,10 @@ use Illuminate\Support\Facades\DB;
 
 class ProfessionalController extends Controller {
 
-    public function index(){
+    public function index(Request $request){
         try {
             // union de tablas para sacar todos los datos
-            $professionals = DB::table('Professional')
+            $query= DB::table('Professional')
             ->join('App_users', 'Professional.app_user_id', '=', 'App_users.id')
             ->join('Users', 'App_users.user_id', '=', 'Users.id')
             // columnas exactas a enviar
@@ -25,7 +25,7 @@ class ProfessionalController extends Controller {
             // revisa si envian un id de profession para filtrar mediante ese id
             if ($request->has('profession_id')){
                 $query->join('Professional_profession', 'Professional.id', '=', 'Professional_profession.professional_id')
-                ->where('Professional_profession.profession_id', '=', $request->profession_id)
+                ->where('Professional_profession.profession_id', '=', $request->profession_id);
             }
 
             $professionals = $query->get();
@@ -76,7 +76,7 @@ class ProfessionalController extends Controller {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Error al obtener el profesional: ' . $e->getMessage()
-            ],500)
+            ],500);
         }
     }
 }
