@@ -17,6 +17,7 @@ class TaskController extends Controller
             $client = DB::table('Client')
                 ->join('App_users', 'Client.app_user_id', '=', 'App_users.id')
                 ->where('App_users.user_id', '=', $user->id)
+                ->select('Client.id as client_id')
                 ->first();
 
             // si no esta logueado no puede pedir trabajo
@@ -27,27 +28,28 @@ class TaskController extends Controller
                 ], 403); // Prohibido
             }
 
-           
+            $photo1 = null;
+            if ($request->filled('photo_1')) {
+                // Guardamos el texto Base64 tal cual llega
+                $photo1 = $request->photo_1; 
+            }
+
+            $photo2 = null;
+            if ($request->filled('photo_2')) {
+                $photo2 = $request->photo_2;
+            }
+
             $taskId = DB::table('Tasks')->insertGetId([
-                'client_id' => $client->id,
+                'client_id' => $client->client_id,
                 'professional_id' => $request->professional_id, 
                 'profession_id' => $request->profession_id,    
                 'title' => $request->title,                    
                 'description' => $request->description,        
-                
                 'task_state_id' => 1, // 1 = "solicited" 
                 'token_qr' => Str::random(20), // Generamos un código QR aleatorio y único
-                'creation_date' => now(), 
-                // cambiar el null en bd
-                'photo_1' => '', 
-                'photo_2' => '',
-                'video_1' => '',
-                'video_2' => '',
-                'accorded_date' => date('Y-m-d'), 
-                'accorded_time' => '00:00:00', 
-                'score_to_client' => 0,
-                'review_to_professional' => '',
-                'score_to_professional' => 0
+                'creation_date' => now(),
+                'photo_1' => $photo1,
+                'photo_2' => $photo2
             ]);
 
             return response()->json([
@@ -71,6 +73,7 @@ class TaskController extends Controller
             $professional = DB::table('Professional')
                 ->join('App_users', 'Professional.app_user_id', '=', 'App_users.id')
                 ->where('App_users.user_id', '=', $user->id)
+                ->select('Professional.id as professional_id')
                 ->first();
             
             if (!$professional){
@@ -85,7 +88,7 @@ class TaskController extends Controller
                 ->join('Client', 'Tasks.client_id', '=', 'Client.id') // unir con datos cliente
                 ->join('App_users', 'Client.app_user_id', '=', 'App_users.id')
                 ->join('Users', 'App_users.user_id', '=', 'Users.id')
-                ->where('Tasks.professional_id', '=', $professional->id)
+                ->where('Tasks.professional_id', '=', $professional->professional_id)
                 ->select(
                     'Tasks.id as task_id',
                     'Tasks.title',
@@ -98,7 +101,17 @@ class TaskController extends Controller
                 )
                 // las nuevas salen antes
                 ->orderBy('Tasks.creation_date', 'desc')
-                ->get();
+                ->get()
+                // formateo de fecha d/m/y
+                ->map(function ($task) {
+                    if ($task->creation_date) {
+                        $task->creation_date = \Carbon\Carbon::parse($task->creation_date)->format('d/m/Y');
+                    }
+                    if ($task->accorded_date) {
+                        $task->accorded_date = \Carbon\Carbon::parse($task->accorded_date)->format('d/m/Y');
+                    }
+                    return $task;
+                });
                 
             return response()->json([
                 'status'=>'succes',
@@ -109,7 +122,7 @@ class TaskController extends Controller
             return response()->json([
                 'status'=>'error',
                 'message'=> 'Error al obtener las tareas: ' . $e->getMessage()
-            ],500)
+            ],500);
         }
     }
 
@@ -151,7 +164,7 @@ class TaskController extends Controller
             // actualiza bd con nuevo estado
             DB::table('Tasks')
             ->where('id',$id)
-            ->update('task_state_id'=>$newStateId);
+            ->update('task_state_id'->$newStateId);
 
             return response()->json([
                 'status' => 'success',
