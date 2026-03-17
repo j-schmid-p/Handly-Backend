@@ -8,6 +8,7 @@ use App\Http\Controllers\ProfessionController;
 use App\Http\Controllers\ProfessionalController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\BudgetController;
+use App\Http\Controllers\InvoiceController;
 
 Route::get('/users', [UserController::class, 'index']);
 Route::post('/register/client', [AuthController::class, 'registerClient']);
@@ -30,7 +31,7 @@ Route::middleware('auth:sanctum')->group(function (){
     Route::get('/tasks/professional', [TaskController::class, 'getProfessionalTasks']);
     Route::patch('/tasks/{id}/status', [TaskController::class, 'updateStatus']);
     Route::post('/tasks/{id}/budget', [BudgetController::class, 'store']); // enviar presupuesto
-
+    Route::post('/tasks/{id}/invoice', [InvoiceController::class, 'store']); //genera facturas
 });
 
 
