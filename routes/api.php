@@ -20,10 +20,7 @@ Route::get('/professions',[ProfessionController::class, 'index']);
 // rutas protegidas (acceso mediante token)
 Route::middleware('auth:sanctum')->group(function (){
 
-    Route::get('/perfil', function (Request $request){
-        return $request->user();
-    });
-
+    Route::get('/perfil', [UserController::class, 'getProfile']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/professionals', [ProfessionalController::class, 'index']);
     Route::get('/professionals/{id}', [ProfessionalController::class, 'show']);
