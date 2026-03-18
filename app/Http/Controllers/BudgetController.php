@@ -16,7 +16,7 @@ class BudgetController extends Controller {
                 ->where('App_users.user_id', '=', $user->id)
                 ->first();
 
-            if(!$profesional){
+            if(!$professional){
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Solo los profesionales pueden enviar presupuestos.'

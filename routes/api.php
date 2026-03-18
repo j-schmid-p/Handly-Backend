@@ -29,6 +29,7 @@ Route::middleware('auth:sanctum')->group(function (){
     Route::get('/professionals/{id}', [ProfessionalController::class, 'show']);
     Route::post('/tasks', [TaskController::class, 'store']); // soloicitar trabajo 
     Route::get('/tasks/professional', [TaskController::class, 'getProfessionalTasks']);
+    Route::get('/tasks/client', [TaskController::class, 'getClientTasks']);
     Route::patch('/tasks/{id}/status', [TaskController::class, 'updateStatus']);
     Route::post('/tasks/{id}/budget', [BudgetController::class, 'store']); // enviar presupuesto
     Route::post('/tasks/{id}/invoice', [InvoiceController::class, 'store']); //genera facturas
