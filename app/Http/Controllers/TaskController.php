@@ -179,4 +179,56 @@ class TaskController extends Controller
         }
 
     }
+
+    public function getClientTasks(Request $request){
+        try {
+            $user=$request->user();
+            
+            // buscamos al cliente por su token
+            $client =DB::table('Client')
+            ->join('App_users', 'Client.app_user_id', '=', 'App_users.id')
+            ->where('App_users.user_id', '=', $user->id)
+            ->first();
+
+            if (!$client) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Acceso denegado. No eres un cliente.'
+                ], 403);
+            }
+
+            // buscamos tarea y pegamos presupuesto si es que ya tiene
+            $tasks = DB::table('Tasks')
+                ->leftJoin('Budgets', 'Tasks.id', '=', 'Budgets.job_id')
+                ->where('Tasks.client_id', '=', $client->id)
+                ->select(
+                    'Tasks.id as task_id',
+                    'Tasks.title',
+                    'Tasks.description',
+                    'Tasks.task_state_id',
+                    'Tasks.creation_date as task_date',
+                    'Budgets.id as budget_id',
+                    'Budgets.agreed_price',
+                    'Budgets.budget_state_id'
+                )
+                ->orderBy('Tasks.creation_date', 'desc')
+                ->get()
+                ->map(function ($task) {
+                    if ($task->task_date) {
+                        $task->task_date = \Carbon\Carbon::parse($task->task_date)->format('d/m/Y');
+                    }
+                    return $task;
+                });
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $tasks
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error al obtener las tareas: ' . $e->getMessage()
+            ], 500);
+    }
 }
