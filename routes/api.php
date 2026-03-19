@@ -16,7 +16,6 @@ Route::post('/register/professional', [AuthController::class, 'registerProfessio
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/professions',[ProfessionController::class, 'index']);
 
-
 // rutas protegidas (acceso mediante token)
 Route::middleware('auth:sanctum')->group(function (){
 
@@ -29,6 +28,7 @@ Route::middleware('auth:sanctum')->group(function (){
     Route::get('/tasks/client', [TaskController::class, 'getClientTasks']);
     Route::patch('/tasks/{id}/status', [TaskController::class, 'updateStatus']);
     Route::post('/tasks/{id}/budget', [BudgetController::class, 'store']); // enviar presupuesto
+    Route::patch('/budgets/{id}/accept', [BudgetController::class, 'accept']); // acepta presupuesto
     Route::post('/tasks/{id}/invoice', [InvoiceController::class, 'store']); //genera facturas
 });
 

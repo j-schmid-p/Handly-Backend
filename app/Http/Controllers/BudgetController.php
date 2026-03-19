@@ -52,5 +52,77 @@ class BudgetController extends Controller {
                 'message' => 'Error al crear el presupuesto: ' . $e->getMessage()
             ], 500);
              }
+
+    }
+
+    public function accept(Request $request, $budgetId){
+        try {
+            DB::beginTransaction();
+
+            $user= $request->user();
+
+            // el que acepta tiene que ser cliente
+            $client = DB::table('Client')
+            ->join('App_users', 'Client.app_user_id', '=', 'App_users.id')
+            ->where('App_users.user_id', '=', $user->id)
+            ->first();
+
+            if($client){
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Solo los clientes pueden aceptar presupuestos.'
+                ], 403);
             }
+
+            // buscar presupuesto
+            $budget = DB::table('Budgets')->where('id',$budgetId)->first();
+
+            if (!$budget) {
+                return response()->json([
+                    'status' => 'error', 
+                    'message' => 'Presupuesto no encontrado.'
+                ], 404);
+            }
+
+            // buscar tarea y ver que pertenezca a este cliente
+            $task = DB::table('Tasks')->where('id', $budget->job_id)->first();
+
+            if (!$task || $task->client_id !== $client->id) {
+                return response()->json([
+                    'status' => 'error', 
+                    'message' => 'No tienes permiso para aceptar este presupuesto porque no es tu encargo.'
+                ], 403);
+            }
+
+            // actualizar estado en bd
+
+            DB::table('Budgets')
+                ->where('id', $budgetId)
+                ->update([
+                    'budget_state_id' => 2, // 2=accepted
+                    'accorded_date' => now() 
+                ]);
+
+            // actualizar estado tarea
+            DB::table('Tasks')
+                ->where('id', $task->id)
+                ->update(['task_state_id' => 3]); // 3= in process
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => '¡Presupuesto aceptado! El profesional ya puede empezar a trabajar.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack(); // si algo salio mal se retrocede
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error al aceptar el presupuesto: ' . $e->getMessage()
+            ], 500);
+
+    }
+
+    }
 }

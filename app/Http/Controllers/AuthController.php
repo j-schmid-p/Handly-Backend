@@ -18,7 +18,6 @@ class AuthController extends Controller
             'dni' => 'required|string|unique:Users,dni', //comprobación de dni en la bd
             'email' => 'required|string|unique:Users,email',//comprobación de email en la bd
             'password' => ['required', Password::min(6)-> mixedCase()->symbols()],
-            'birthdate' => 'required|date',
             'street_number' => 'required|string',
             'city' => 'required|string',
             'postal_code' => "required|string",
@@ -35,8 +34,8 @@ class AuthController extends Controller
                 'surname'=> $request->surname,
                 'dni'=> $request ->dni,
                 'email' => $request->email,
-                'mobile' => $request->mobile ?? '', //vacio si no manda
-                'birthdate' => $request->birthdate,
+                'mobile' => null, 
+                'birthdate' => null,
                 'password' => Hash::make($request->password),
             ]);
 
@@ -53,7 +52,7 @@ class AuthController extends Controller
             ]);
 
             //insertar en Client 
-            DB::table('Client')->Insert([
+            DB::table('Client')->insert([
                 'app_user_id'=> $appUserId
             ]);
             
@@ -61,7 +60,7 @@ class AuthController extends Controller
             DB::commit();
 
             return response()->json ([
-                'status'=> 'succes',
+                'status'=> 'success',
                 'message'=>'Cliente registrado correctamente'
             ],201);
 
@@ -71,7 +70,7 @@ class AuthController extends Controller
 
             return response()->json([
                 'status'=>'error',
-                'message'=>'Hubo un error al registrarse: ', $e->getMessage()
+                'message'=>'Hubo un error al registrarse: '. $e->getMessage()
             ], 500);
 
         }
@@ -84,12 +83,11 @@ class AuthController extends Controller
             'dni' => 'required|string|unique:Users,dni',
             'email' => 'required|email|unique:Users,email',
             'password' => ['required', Password::min(6)->mixedCase()->symbols()],
-            'birthdate' => 'required|date',
             'street_number' => 'required|string',
             'city' => 'required|string',
             'postal_code' => 'required|string',
             'country' => 'required|string',
-            'professions' => 'required|array|min:1' // lista de oficios en formato array 
+            'professions' => 'required|array|min:1|max:5' // lista de oficios en formato array 
         ]);
 
         try {
@@ -102,8 +100,8 @@ class AuthController extends Controller
                 'surname'=> $request->surname,
                 'dni'=> $request ->dni,
                 'email' => $request->email,
-                'mobile' => $request->mobile ?? '', //vacio si no manda
-                'birthdate' => $request->birthdate,
+                'mobile' => null, //vacio si no manda
+                'birthdate' => null,
                 'password' => Hash::make($request->password),
             ]);
 
@@ -135,7 +133,7 @@ class AuthController extends Controller
             DB::commit();
 
             return response()->json([
-                'status'=>'succes',
+                'status'=>'success',
                 'message'=>'professional added'
             ],201);
 
