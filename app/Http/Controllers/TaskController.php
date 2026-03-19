@@ -231,4 +231,5 @@ class TaskController extends Controller
                 'message' => 'Error al obtener las tareas: ' . $e->getMessage()
             ], 500);
     }
+    }
 }
