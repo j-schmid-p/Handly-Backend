@@ -14,6 +14,7 @@ class InvoiceController extends Controller {
             $professional = DB::table('Professional')
                 ->join('App_users', 'Professional.app_user_id', '=', 'App_users.id')
                 ->where('App_users.user_id', '=', $user->id)
+                ->select('Professional.id')
                 ->first();
 
             if (!$professional) {

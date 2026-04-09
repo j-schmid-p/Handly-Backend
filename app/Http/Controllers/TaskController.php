@@ -133,6 +133,7 @@ class TaskController extends Controller
             $professional = DB::table('Professional')
                 ->join('App_users', 'Professional.app_user_id', '=', 'App_users.id')
                 ->where('App_users.user_id', '=', $user->id)
+                ->select('Professional.id')
                 ->first();
 
             if (!$professional) {
@@ -164,7 +165,7 @@ class TaskController extends Controller
             // actualiza bd con nuevo estado
             DB::table('Tasks')
             ->where('id',$id)
-            ->update('task_state_id'->$newStateId);
+            ->update(['task_state_id' => $newStateId]);
 
             return response()->json([
                 'status' => 'success',
@@ -188,6 +189,7 @@ class TaskController extends Controller
             $client =DB::table('Client')
             ->join('App_users', 'Client.app_user_id', '=', 'App_users.id')
             ->where('App_users.user_id', '=', $user->id)
+            ->select('Client.id')
             ->first();
 
             if (!$client) {
