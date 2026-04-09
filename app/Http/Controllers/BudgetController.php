@@ -97,7 +97,7 @@ class BudgetController extends Controller {
             // buscamos tarea y el dueño de la tarea
             $task = DB::table('Tasks')->where('id', $budget->job_id)->first();
 
-            if (!$task || $task->client_id !== $client->id) {
+            if (!$task || $task->client_id != $client->id) {
                 return response()->json([
                     'status' => 'error', 
                     'message' => 'No tienes permiso para aceptar este presupuesto porque no es tu encargo.'
