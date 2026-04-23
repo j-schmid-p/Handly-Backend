@@ -1,11 +1,16 @@
 # Imagen base: PHP 8.2 con Apache incluido
 FROM php:8.2-apache
 
-# Instalar dependencias del sistema y extensión de PostgreSQL
+# Instalar dependencias del sistema, PostgreSQL, Unzip y Git (para Composer)
 RUN apt-get update && apt-get install -y \
     libpq-dev \
+    unzip \
+    git \
     && docker-php-ext-install pdo pdo_pgsql \
     && apt-get clean
+    
+# instalar compose
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Activar mod_rewrite (necesario para APIs REST con rutas limpias)
 RUN a2enmod rewrite
@@ -13,8 +18,13 @@ RUN a2enmod rewrite
 # Cambiar el DocumentRoot a la carpeta /public
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
-RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+RUN echo "<VirtualHost *:80>\n\
+    DocumentRoot ${APACHE_DOCUMENT_ROOT}\n\
+    <Directory ${APACHE_DOCUMENT_ROOT}>\n\
+        AllowOverride All\n\
+        Require all granted\n\
+    </Directory>\n\
+</VirtualHost>" > /etc/apache2/sites-available/000-default.conf
 
 # Copiar todo el código PHP al servidor web de Apache
 COPY . /var/www/html/
