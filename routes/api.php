@@ -10,7 +10,6 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\InvoiceController;
 
-Route::get('/users', [UserController::class, 'index']);
 Route::post('/register/client', [AuthController::class, 'registerClient']);
 Route::post('/register/professional', [AuthController::class, 'registerProfessional']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -18,18 +17,29 @@ Route::get('/professions',[ProfessionController::class, 'index']);
 
 // rutas protegidas (acceso mediante token)
 Route::middleware('auth:sanctum')->group(function (){
-
+    Route::get('/users', [UserController::class, 'index']);
     Route::get('/perfil', [UserController::class, 'getProfile']);
+
     Route::post('/logout', [AuthController::class, 'logout']);
+
     Route::get('/professionals', [ProfessionalController::class, 'index']);
     Route::get('/professionals/{id}', [ProfessionalController::class, 'show']);
+
     Route::post('/tasks', [TaskController::class, 'store']); // soloicitar trabajo 
     Route::get('/tasks/professional', [TaskController::class, 'getProfessionalTasks']);
     Route::get('/tasks/client', [TaskController::class, 'getClientTasks']);
     Route::patch('/tasks/{id}/status', [TaskController::class, 'updateStatus']);
+    Route::get('/tasks/{id}/details', [TaskController::class, 'getTaskDetails']);
+    Route::get('/admin/tasks', [TaskController::class, 'getAllTasks']); //ADMIN
+
+
     Route::post('/tasks/{id}/budget', [BudgetController::class, 'store']); // enviar presupuesto
     Route::patch('/budgets/{id}/accept', [BudgetController::class, 'accept']); // acepta presupuesto
+
     Route::post('/tasks/{id}/invoice', [InvoiceController::class, 'store']); //genera facturas
+    Route::get('/admin/invoices', [InvoiceController::class, 'getAllInvoices']);//ADMIN
+
+    Route::post('/admin/professions', [ProfessionController::class, 'store']);//ADMIN
 });
 
 

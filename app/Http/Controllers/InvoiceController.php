@@ -75,4 +75,43 @@ class InvoiceController extends Controller {
             ], 500);
     }
 }
+
+// PARA ADMIN: Obtener todas las facturas y finanzas
+    public function getAllInvoices(Request $request) {
+        try {
+            $invoices = DB::table('Invoices')
+                ->join('Tasks', 'Invoices.task_id', '=', 'Tasks.id')
+                ->select(
+                    'Invoices.id as invoice_id',
+                    'Tasks.title as task_title',
+                    'Invoices.base_amount',
+                    'Invoices.handly_commission',
+                    'Invoices.total_amount',
+                    'Invoices.issue_date'
+                )
+                ->orderBy('Invoices.id', 'desc')
+                ->get()
+                ->map(function ($invoice) {
+                    if ($invoice->issue_date) {
+                        $invoice->issue_date = \Carbon\Carbon::parse($invoice->issue_date)->format('d/m/Y');
+                    }
+                    return $invoice;
+                });
+
+            // Calculamos el total ganado por HandLy para que el Admin lo vea de un vistazo
+            $totalCommission = $invoices->sum('handly_commission');
+
+            return response()->json([
+                'status' => 'success',
+                'total_commission_earned' => $totalCommission,
+                'data' => $invoices
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error al obtener las finanzas: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
