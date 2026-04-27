@@ -234,4 +234,104 @@ class TaskController extends Controller
             ], 500);
     }
     }
+
+    public function getTaskDetails(Request $request, $id){
+        try {
+            // buscamos la tarea y cruzamos con los datos del cliente y del estado
+            $task = DB::table('Tasks')
+                ->join('Task_states', 'Tasks.task_state_id', '=', 'Task_states.id')
+                ->join('Client', 'Tasks.client_id', '=', 'Client.id')
+                ->join('App_users', 'Client.app_user_id', '=', 'App_users.id')
+                ->join('Users', 'App_users.user_id', '=', 'Users.id')
+                ->leftJoin('Budgets', 'Tasks.id', '=', 'Budgets.job_id') // leftJoin porque puede no tener presupuesto aún
+                ->where('Tasks.id', '=', $id)
+                ->select(
+                    'Tasks.id as task_id',
+                    'Tasks.title',
+                    'Tasks.description',
+                    'Tasks.creation_date',
+                    'Task_states.name as status_name',
+                    'Task_states.id as status_id',
+                    'Users.name as client_name',
+                    'Users.surname as client_surname',
+                    'App_users.city as client_city'
+                    'Budgets.id as budget_id',
+                    'Budgets.agreed_price',
+                    'Budgets.budget_state_id'
+                )
+                ->first();
+            
+            if (!$task) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Tarea no encontrada.'
+                ], 404);
+            }
+
+            // formatear fecha
+            if ($task->creation_date) {
+                $task->creation_date = \Carbon\Carbon::parse($task->creation_date)->format('d/m/Y');
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $task
+            ], 200);
+
+            } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error al obtener los detalles de la tarea: ' . $e->getMessage()
+            ], 500);
+        
+        }
+               
+    }
+
+    // PARA ADMIN: Obtener todas las tareas del sistema
+    public function getAllTasks(Request $request) {
+        try {
+            $tasks = DB::table('Tasks')
+                ->join('Task_states', 'Tasks.task_state_id', '=', 'Task_states.id')
+                ->join('Client', 'Tasks.client_id', '=', 'Client.id')
+                // Unimos para sacar el nombre del cliente
+                ->join('App_users as ClientAppUser', 'Client.app_user_id', '=', 'ClientAppUser.id')
+                ->join('Users as ClientUser', 'ClientAppUser.user_id', '=', 'ClientUser.id')
+                // Unimos (leftJoin por si no tiene) para sacar el nombre del profesional
+                ->leftJoin('Professional', 'Tasks.professional_id', '=', 'Professional.id')
+                ->leftJoin('App_users as ProfAppUser', 'Professional.app_user_id', '=', 'ProfAppUser.id')
+                ->leftJoin('Users as ProfUser', 'ProfAppUser.user_id', '=', 'ProfUser.id')
+                ->select(
+                    'Tasks.id as task_id',
+                    'Tasks.title',
+                    'Task_states.name as status',
+                    'Tasks.creation_date',
+                    'ClientUser.name as client_name',
+                    'ProfUser.name as professional_name'
+                )
+                ->orderBy('Tasks.id', 'desc')
+                ->get()
+                ->map(function ($task) {
+                    if ($task->creation_date) {
+                        $task->creation_date = \Carbon\Carbon::parse($task->creation_date)->format('d/m/Y');
+                    }
+                    // Si no hay profesional asignado, mandamos un texto por defecto
+                    if (!$task->professional_name) {
+                        $task->professional_name = 'Sin asignar';
+                    }
+                    return $task;
+                });
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $tasks
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error al obtener el listado global de tareas: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
