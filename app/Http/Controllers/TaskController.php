@@ -254,7 +254,7 @@ class TaskController extends Controller
                     'Task_states.id as status_id',
                     'Users.name as client_name',
                     'Users.surname as client_surname',
-                    'App_users.city as client_city'
+                    'App_users.city as client_city',
                     'Budgets.id as budget_id',
                     'Budgets.agreed_price',
                     'Budgets.budget_state_id'
