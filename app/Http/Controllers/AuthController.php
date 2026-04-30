@@ -87,6 +87,8 @@ class AuthController extends Controller
             'city' => 'required|string',
             'postal_code' => 'required|string',
             'country' => 'required|string',
+            'mobile' => 'nullable|string', // <-- Nulleable significa opcional
+            'birthdate' => 'nullable|date',
             'professions' => 'required|array|min:1|max:5' // lista de oficios en formato array 
         ]);
 
@@ -100,8 +102,8 @@ class AuthController extends Controller
                 'surname'=> $request->surname,
                 'dni'=> $request ->dni,
                 'email' => $request->email,
-                'mobile' => null, //vacio si no manda
-                'birthdate' => null,
+                'mobile' => $request->mobile,       // <-- Si no lo mandan, Laravel pondrá null
+                'birthdate' => $request->birthdate,
                 'password' => Hash::make($request->password),
             ]);
 
@@ -184,5 +186,53 @@ class AuthController extends Controller
             'status'=>'success',
             'message'=>'sesion cerrada'
         ]);
+    }
+
+    public function deleteUser($id) {
+        try {
+            DB::beginTransaction();
+
+            // 1. buscar si esta  en App_users
+            $appUser = DB::table('App_users')->where('user_id', $id)->first();
+
+            if ($appUser) {
+                // si es profesional borrar sus oficios y su perfil
+                $professional = DB::table('Professional')->where('app_user_id', $appUser->id)->first();
+                if ($professional) {
+                    DB::table('Professional_profession')->where('professional_id', $professional->id)->delete();
+                    DB::table('Professional')->where('id', $professional->id)->delete();
+                }
+
+                // si por error se guardó como cliente, borrar su perfil
+                DB::table('Client')->where('app_user_id', $appUser->id)->delete();
+
+                // borrar de App_users
+                DB::table('App_users')->where('id', $appUser->id)->delete();
+            }
+
+            // 5. borrar los tokens de acceso que tuviera generados
+            DB::table('personal_access_tokens')->where('tokenable_id', $id)->delete();
+
+            // 6. borrar el Usuario
+            $deleted = DB::table('Users')->where('id', $id)->delete();
+
+            if (!$deleted) {
+                throw new \Exception("El usuario con ID $id no existe.");
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Usuario borrado de la faz de la tierra de forma segura.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Hubo un error al borrar: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

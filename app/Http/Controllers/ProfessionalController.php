@@ -79,4 +79,79 @@ class ProfessionalController extends Controller {
             ],500);
         }
     }
+
+    public function update(Request $request, $id)
+    {
+        // Validamos los datos
+        $request->validate([
+            'name' => 'sometimes|required|string',
+            'surname' => 'sometimes|required|string',
+            'mobile' => 'nullable|string',
+            'street_number' => 'sometimes|required|string',
+            'city' => 'sometimes|required|string',
+            'postal_code' => 'sometimes|required|string',
+            'country' => 'sometimes|required|string',
+            'professions' => 'sometimes|array|min:1|max:5' // Los oficios nuevos
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // Buscamos al profesional por su ID
+            $professional = DB::table('Professional')->where('id', $id)->first();
+
+            if (!$professional) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Profesional no encontrado.'
+                ], 404);
+            }
+
+            // Buscamos sus perfiles padre para saber qué IDs editar
+            $appUser = DB::table('App_users')->where('id', $professional->app_user_id)->first();
+
+            // Actualizamos la tabla principal (Users)
+            DB::table('Users')->where('id', $appUser->user_id)->update([
+                'name' => $request->name,
+                'surname' => $request->surname,
+                'mobile' => $request->mobile,
+            ]);
+
+            // Actualizamos la dirección en App_users
+            DB::table('App_users')->where('id', $appUser->id)->update([
+                'street_number' => $request->street_number,
+                'city' => $request->city,
+                'postal_code' => $request->postal_code,
+                'country' => $request->country,
+            ]);
+
+            // actualizar los oficios
+            if ($request->has('professions')) {
+                // Borramos todos sus oficios antiguos
+                DB::table('Professional_profession')->where('professional_id', $professional->id)->delete();
+
+                // Insertamos los oficios nuevos
+                foreach ($request->professions as $professionId) {
+                    DB::table('Professional_profession')->insert([
+                        'professional_id' => $professional->id,
+                        'profession_id' => $professionId
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Perfil de profesional actualizado correctamente.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error al actualizar el profesional: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
