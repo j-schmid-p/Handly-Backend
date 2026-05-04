@@ -9,6 +9,7 @@ use App\Http\Controllers\ProfessionalController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\ReportController;
 
 Route::post('/register/client', [AuthController::class, 'registerClient']);
 Route::post('/register/professional', [AuthController::class, 'registerProfessional']);
@@ -25,6 +26,7 @@ Route::middleware('auth:sanctum')->group(function (){
     Route::put('/clients/{id}', [UserController::class, 'updateClient']);
     Route::get('/clients', [UserController::class, 'getClients']);
     Route::get('/clients/{id}', [UserController::class, 'getClientDetails']);
+    Route::patch('/users/{id}/state', [UserController::class, 'changeState']); // admin banear o reactivar usuario
     
     Route::post('/logout', [AuthController::class, 'logout']);
 
@@ -35,11 +37,12 @@ Route::middleware('auth:sanctum')->group(function (){
     Route::post('/tasks', [TaskController::class, 'store']); // soloicitar trabajo 
     Route::get('/tasks/professional', [TaskController::class, 'getProfessionalTasks']);
     Route::get('/tasks/client', [TaskController::class, 'getClientTasks']);
-    Route::patch('/tasks/{id}/status', [TaskController::class, 'updateStatus']);
+    Route::patch('/tasks/{id}/status', [TaskController::class, 'updateStatus']); // cambiar estado de la tarea
     Route::get('/tasks/{id}/details', [TaskController::class, 'getTaskDetails']);
     Route::get('/admin/tasks', [TaskController::class, 'getAllTasks']); //ADMIN
     Route::put('/tasks/{id}', [TaskController::class, 'update']);
     Route::delete('/tasks/{id}', [TaskController::class, 'destroy']);
+    Route::get('/admin/transactions', [TaskController::class, 'getAllTransactions']); //todas las transacciones 
 
 
     Route::post('/tasks/{id}/budget', [BudgetController::class, 'store']); // enviar presupuesto
@@ -54,7 +57,14 @@ Route::middleware('auth:sanctum')->group(function (){
     Route::put('/invoices/{id}', [InvoiceController::class, 'update']);
     Route::delete('/invoices/{id}', [InvoiceController::class, 'destroy']);
 
-    Route::post('/admin/professions', [ProfessionController::class, 'store']);//ADMIN  
+    Route::post('/admin/professions', [ProfessionController::class, 'store']);// crear profesion 
+    Route::put('/admin/professions/{id}', [ProfessionController::class, 'update']); // actualizar una profesion ya existente
+    Route::delete('/admin/professions/{id}', [ProfessionController::class, 'destroy']); // eliminar una profesion
+
+    // Reports
+    Route::post('/reports', [ReportController::class, 'store']); //  un usuario envíe una denuncia
+    Route::get('/admin/reports', [ReportController::class, 'index']); // ver todas las denuncias 
+    Route::patch('/admin/reports/{id}/status', [ReportController::class, 'updateStatus']); // Cambiar estado
 });
 
 

@@ -10,6 +10,27 @@ use App\Models\User;
 
 class UserController extends Controller
 {
+    public function index()
+    {
+        try {
+            // Sacamos a todos los usuarios, pero sin la contraseña por seguridad
+            $users = DB::table('Users')
+                ->select('id', 'rol_id', 'name', 'surname', 'email', 'mobile', 'dni')
+                ->get();
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $users
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error al obtener la lista de usuarios: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function getProfile(Request $request)
     {
         $user = $request->user(); // obtenemos user
@@ -151,7 +172,38 @@ class UserController extends Controller
         }
     }
 
-    
+    public function changeState(Request $request, $id)
+    {
+        // Validamos que nos manden un estado valido
+        $request->validate([
+            'account_state_id' => 'required|integer'
+        ]);
+
+        try {
+            // account_state_id esta  en App_users entonces se busca por user_id
+            $updated = DB::table('App_users')->where('user_id', $id)->update([
+                'account_state_id' => $request->account_state_id
+            ]);
+
+            if (!$updated) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Perfil de usuario no encontrado o el estado ya era ese.'
+                ], 404);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Estado de la cuenta actualizado correctamente.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error al cambiar el estado de la cuenta: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 
 
 }
