@@ -65,6 +65,8 @@ Route::middleware('auth:sanctum')->group(function (){
     Route::post('/reports', [ReportController::class, 'store']); //  un usuario envíe una denuncia
     Route::get('/admin/reports', [ReportController::class, 'index']); // ver todas las denuncias 
     Route::patch('/admin/reports/{id}/status', [ReportController::class, 'updateStatus']); // Cambiar estado
+
+    Route::post('/verify-email', [AuthController::class, 'verifyEmail']); // codigo de verificacion correo
 });
 
 

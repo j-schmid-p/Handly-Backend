@@ -13,7 +13,7 @@ class ProfessionController extends Controller
 
             return response()->json([
                 'status'=>'success',
-                'data'=>'$professions'
+                'data'=>$professions
             ],200);
         } catch (\Exception $e){
             return response()->json([
