@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB; // hablar con bd
 use Illuminate\Support\Facades\Hash; // encriptación
 use Illuminate\Validation\Rules\Password; // reglas contraseña
 use App\Models\User; //modelo User
+use Illuminate\Support\Facades\Mail; // para verificacion de mail
 
 class AuthController extends Controller
 {
@@ -26,8 +27,11 @@ class AuthController extends Controller
 
         try {
             DB::beginTransaction();
-             //insertar en Users
+ 
+            // generar codigo
+            $codigoVerificacion = (string) rand(100000, 999999);
 
+             //insertar en Users
             $userId = DB::table('Users')->insertGetId([
                 'rol_id' => 1, //Cliente
                 'name' => $request->name,
@@ -37,6 +41,7 @@ class AuthController extends Controller
                 'mobile' => null, 
                 'birthdate' => null,
                 'password' => Hash::make($request->password),
+                'verification_code' => $codigoVerificacion
             ]);
 
             //insertar en App_users
@@ -58,6 +63,12 @@ class AuthController extends Controller
             
             // esto solo si lo demas se hizo bien
             DB::commit();
+
+            // enviar correo
+            Mail::raw("¡Hola! Tu código de verificación para Handly es: $codigoVerificacion", function ($message) use ($request) {
+                $message->to($request->email)
+                        ->subject('Código de verificación - Handly');
+            });
 
             return response()->json ([
                 'status'=> 'success',
@@ -234,5 +245,33 @@ class AuthController extends Controller
                 'message' => 'Hubo un error al borrar: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    public function verifyEmail(Request $request) {
+        $request->validate([
+            'email' => 'required|email',
+            'code' => 'required|string'
+        ]);
+
+        // Buscamos al usuario por su email
+        $user = DB::table('Users')->where('email', $request->email)->first();
+
+        // Si no existe o el código no coincide...
+        if (!$user || $user->verification_code !== $request->code) {
+            return response()->json([
+                'status' => 'error', 
+                'message' => 'El código es incorrecto o el usuario no existe.'
+            ], 400);
+        }
+
+        // Si es correcto: Borramos el código para que no se pueda reusar
+        DB::table('Users')->where('id', $user->id)->update([
+            'verification_code' => null
+        ]);
+
+        return response()->json([
+            'status' => 'success', 
+            'message' => 'Cuenta verificada correctamente.'
+        ]);
     }
 }
