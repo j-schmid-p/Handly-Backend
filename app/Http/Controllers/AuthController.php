@@ -64,15 +64,11 @@ class AuthController extends Controller
             // esto solo si lo demas se hizo bien
             DB::commit();
 
-            // enviar correo
-            Mail::raw("¡Hola! Tu código de verificación para Handly es: $codigoVerificacion", function ($message) use ($request) {
-                $message->to($request->email)
-                        ->subject('Código de verificación - Handly');
-            });
-
+            // enviar codigo
             return response()->json ([
                 'status'=> 'success',
-                'message'=>'Cliente registrado correctamente'
+                'message'=>'Cliente registrado correctamente.',
+                'codigo_secreto' => $codigoVerificacion
             ],201);
 
             // si no rollback
