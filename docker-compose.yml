@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    container_name: handly-api
+    ports:
+      - "8000:80"
+    environment:
+      - DB_CONNECTION=pgsql
+      - DB_HOST=host.docker.internal
+      - DB_PORT=5432
+      - DB_DATABASE=handly
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=111
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - APP_KEY=base64:${APP_KEY}
+    volumes:
+      - .:/var/www/html
+    networks:
+      - handly-network
+
+networks:
+  handly-network:
+    driver: bridge
