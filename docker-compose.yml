@@ -12,7 +12,7 @@ services:
       - DB_PORT=5432
       - DB_DATABASE=handly
       - DB_USERNAME=postgres
-      - DB_PASSWORD=111
+      - DB_PASSWORD=1234
       - APP_ENV=local
       - APP_DEBUG=true
       - APP_KEY=base64:${APP_KEY}
