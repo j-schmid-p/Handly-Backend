@@ -27,6 +27,7 @@ Route::middleware('auth:sanctum')->group(function (){
     Route::get('/clients', [UserController::class, 'getClients']);
     Route::get('/clients/{id}', [UserController::class, 'getClientDetails']);
     Route::patch('/users/{id}/state', [UserController::class, 'changeState']); // admin banear o reactivar usuario
+    Route::post('/upload-documents', [UserController::class, 'uploadDocuments']);
     
     Route::post('/logout', [AuthController::class, 'logout']);
 
@@ -67,6 +68,7 @@ Route::middleware('auth:sanctum')->group(function (){
     Route::patch('/admin/reports/{id}/status', [ReportController::class, 'updateStatus']); // Cambiar estado
 
     Route::post('/verify-email', [AuthController::class, 'verifyEmail']); // codigo de verificacion correo
+    
 });
 
 
