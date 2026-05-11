@@ -14,6 +14,9 @@ Route::post('/register/client', [AuthController::class, 'registerClient']);
 Route::post('/register/professional', [AuthController::class, 'registerProfessional']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/professions',[ProfessionController::class, 'index']);
+Route::get('/prueba', function () {
+    return response()->json(['mensaje' => '¡Hola desde Laravel!']);
+});
 
 // rutas protegidas (acceso mediante token)
 Route::middleware('auth:sanctum')->group(function (){

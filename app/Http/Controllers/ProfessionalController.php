@@ -19,7 +19,9 @@ class ProfessionalController extends Controller {
                     'Users.name', 
                     'Users.surname', 
                     'Users.email',
-                    'App_users.city'
+                    'App_users.city',
+                    'App_users.street_number',
+                    'App_users.postal_code'
             );
 
             // revisa si envian un id de profession para filtrar mediante ese id
@@ -56,7 +58,8 @@ class ProfessionalController extends Controller {
                     'Users.email',
                     'Users.mobile',
                     'App_users.city',
-                    'App_users.street_number'
+                    'App_users.street_number',
+                    'App_users.postal_code'
             )
             ->where('Professional.id', '=', $id)
             ->first();
