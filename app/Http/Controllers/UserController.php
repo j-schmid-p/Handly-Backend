@@ -205,5 +205,46 @@ class UserController extends Controller
         }
     }
 
+    public function uploadDocuments(Request $request) {
+        // validamos que lleguen las 3 imágenes y el email del usuario
+        $request->validate([
+            'email' => 'required|email|exists:Users,email', // para saber quién es
+            'selfie' => 'required|file|image|max:5120', // Máximo 5MB por foto
+            'document_front' => 'required|file|image|max:5120',
+            'document_back' => 'required|file|image|max:5120',
+        ]);
+
+        try {
+            // Limpiamos el email para usarlo como nombre de carpeta
+            $userEmail = str_replace('@', '_at_', $request->email);
+            
+            // 3. Guardamos las fotos en la carpeta storage/app/public/documents/...
+            $selfiePath = $request->file('selfie')->store("documents/{$userEmail}", 'public');
+            $frontPath = $request->file('document_front')->store("documents/{$userEmail}", 'public');
+            $backPath = $request->file('document_back')->store("documents/{$userEmail}", 'public');
+
+            // este sería el momento de hacer un UPDATE en la tabla App_users usando el email.
+            /*
+            $user = DB::table('Users')->where('email', $request->email)->first();
+            DB::table('App_users')->where('user_id', $user->id)->update([
+                'selfie_path' => $selfiePath,
+                'doc_front_path' => $frontPath,
+                'doc_back_path' => $backPath
+            ]);
+            */
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Documentos recibidos y guardados correctamente.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error al guardar los documentos: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 
 }
