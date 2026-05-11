@@ -7,15 +7,15 @@ use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
-    // crear una nueva denuncia 
+    // crear una nueva denuncia
     public function store(Request $request)
     {
         // Validamos los datos que nos llegan
         $request->validate([
-            'reporter_id' => 'required|integer', 
-            'reportee_id' => 'required|integer', 
-            'report_origin' => 'required|string', 
-            'cause' => 'required|string',         
+            'reporter_id' => 'required|integer',
+            'reportee_id' => 'required|integer',
+            'report_origin' => 'required|string',
+            'cause' => 'required|string',
         ]);
 
         try {
@@ -25,7 +25,7 @@ class ReportController extends Controller
                 'reportee_id' => $request->reportee_id,
                 'report_origin' => $request->report_origin,
                 'cause' => $request->cause,
-                'report_state_id' => 1 
+                'report_state_id' => 1
             ]);
 
             return response()->json([
@@ -46,21 +46,25 @@ class ReportController extends Controller
     public function index()
     {
         try {
-            // Hacemos joins para obtener los nombres reales
+        //JULIA : cambiado lo siguiente:
+            // Reports.reporter_id y reportee_id apuntan a App_users.id (no a Users.id),
+            // por eso hay que pasar por App_users antes de llegar al nombre en Users.
             $reports = DB::table('Reports')
-                ->leftjoin('Users as Reporter', 'Reports.reporter_id', '=', 'Reporter.id')
-                ->leftjoin('Users as Reportee', 'Reports.reportee_id', '=', 'Reportee.id')
-                ->leftjoin('Report_states', 'Reports.report_state_id', '=', 'Report_states.id')
+                ->leftJoin('App_users as ReporterApp', 'Reports.reporter_id', '=', 'ReporterApp.id')
+                ->leftJoin('Users as Reporter', 'ReporterApp.user_id', '=', 'Reporter.id')
+                ->leftJoin('App_users as ReporteeApp', 'Reports.reportee_id', '=', 'ReporteeApp.id')
+                ->leftJoin('Users as Reportee', 'ReporteeApp.user_id', '=', 'Reportee.id')
+                ->leftJoin('Report_states', 'Reports.report_state_id', '=', 'Report_states.id')
                 ->select(
                     'Reports.id',
                     'Reports.report_origin',
                     'Reports.cause',
                     'Report_states.id as state_id',
                     'Report_states.name as state_name',
-                    'Reporter.id as reporter_id',
+                    'Reports.reporter_id', //JULIA : cambiado esta linea
                     'Reporter.name as reporter_name',
                     'Reporter.surname as reporter_surname',
-                    'Reportee.id as reportee_id',
+                    'Reports.reportee_id', //JULIA : cambiado esta linea
                     'Reportee.name as reportee_name',
                     'Reportee.surname as reportee_surname'
                 )
@@ -75,6 +79,27 @@ class ReportController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Error al obtener las denuncias: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+// JULIA : añadido este metodo
+    // Ver todos los estados de denuncia (para poblar el dropdown en el admin)
+    public function getReportStates()
+    {
+        try {
+            $states = DB::table('Report_states')->orderBy('id')->get();
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $states
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error al obtener los estados: ' . $e->getMessage()
             ], 500);
         }
     }
