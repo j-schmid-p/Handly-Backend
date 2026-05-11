@@ -13,10 +13,46 @@ class UserController extends Controller
     public function index()
     {
         try {
-            // Sacamos a todos los usuarios, pero sin la contraseña por seguridad
+        // JULIA : manda toda la info de todos los usuarios
+            // Sacamos todos los usuarios con todos los datos relevantes (sin contraseña)
+            // LEFT JOIN porque admin/superadmin no tienen entrada en App_users / Professional
             $users = DB::table('Users')
-                ->select('id', 'rol_id', 'name', 'surname', 'email', 'mobile', 'dni')
+                ->leftJoin('App_users', 'Users.id', '=', 'App_users.user_id')
+                ->leftJoin('Professional', 'Professional.app_user_id', '=', 'App_users.id')
+                ->select(
+                    'Users.id',
+                    'Users.rol_id',
+                    'Users.name',
+                    'Users.surname',
+                    'Users.email',
+                    'Users.mobile',
+                    'Users.dni',
+                    'Users.birthdate',
+                    'App_users.street_number',
+                    'App_users.city',
+                    'App_users.postal_code',
+                    'App_users.country',
+                    'App_users.account_state_id',
+                    'App_users.last_connection',
+                    'App_users.account_creation_date',
+                    'Professional.id as professional_id'
+                )
+                ->orderBy('Users.id')
                 ->get();
+
+            // JULIA : mandar los nombres de los ofcios de los profesionales
+            foreach ($users as $u) {
+                $profession = [];
+                if ($u->professional_id) {
+                    $profession = DB::table('Professional_profession')
+                        ->join('Professions', 'Professional_profession.profession_id', '=', 'Professions.id')
+                        ->where('Professional_profession.professional_id', $u->professional_id)
+                        ->pluck('Professions.name_profession')
+                        ->toArray();
+                }
+                $u->profession = $profession;
+                unset($u->professional_id); // no lo necesita el cliente
+            }
 
             return response()->json([
                 'status' => 'success',
@@ -27,6 +63,107 @@ class UserController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Error al obtener la lista de usuarios: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+
+// JULIA : actualizar datos de un usuario
+    // PUT /api/users/{id} - actualiza TODOS los datos de un usuario en una sola llamada.
+    // Pensado para el admin app, que envía el usuario completo aunque sólo se hayan
+    // editado un par de campos. La API simplemente sobreescribe lo que le llega.
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'name' => 'nullable|string',
+            'surname' => 'nullable|string',
+            'email' => 'nullable|email',
+            'mobile' => 'nullable|string',
+            'dni' => 'nullable|string',
+            'birthdate' => 'nullable|date',
+            'street_number' => 'nullable|string',
+            'city' => 'nullable|string',
+            'postal_code' => 'nullable|string',
+            'country' => 'nullable|string',
+            'account_state_id' => 'nullable|integer',
+            'profession' => 'nullable|array',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $user = DB::table('Users')->where('id', $id)->first();
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Usuario no encontrado.'
+                ], 404);
+            }
+
+            // 1. Tabla Users (todos los usuarios, incluido admin/superadmin)
+            DB::table('Users')->where('id', $id)->update([
+                'name' => $request->name,
+                'surname' => $request->surname,
+                'email' => $request->email,
+                'mobile' => $request->mobile,
+                'dni' => $request->dni,
+                'birthdate' => $request->birthdate,
+            ]);
+
+            // 2. Tabla App_users (sólo para clientes y profesionales)
+            $appUser = DB::table('App_users')->where('user_id', $id)->first();
+            if ($appUser) {
+                DB::table('App_users')->where('user_id', $id)->update([
+                    'street_number' => $request->street_number,
+                    'city' => $request->city,
+                    'postal_code' => $request->postal_code,
+                    'country' => $request->country,
+                    'account_state_id' => $request->account_state_id,
+                ]);
+
+                // 3. Profesiones (sólo si es profesional y mandaron el array)
+                // Nota: comprobamos rol_id REAL en la BD, no lo que mande el front,
+                // para no romper si el admin cambió el rol en el form (no soportado aquí)
+                if ($user->rol_id == 2 && is_array($request->profession)) {
+                    $professional = DB::table('Professional')
+                        ->where('app_user_id', $appUser->id)
+                        ->first();
+
+                    if ($professional) {
+                        // borrar oficios existentes
+                        DB::table('Professional_profession')
+                            ->where('professional_id', $professional->id)
+                            ->delete();
+
+                        // insertar los nuevos (vienen como nombres, los buscamos por nombre)
+                        foreach ($request->profession as $professionName) {
+                            $prof = DB::table('Professions')
+                                ->where('name_profession', $professionName)
+                                ->first();
+                            if ($prof) {
+                                DB::table('Professional_profession')->insert([
+                                    'professional_id' => $professional->id,
+                                    'profession_id' => $prof->id,
+                                ]);
+                            }
+                        }
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Usuario actualizado correctamente.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error al actualizar el usuario: ' . $e->getMessage()
             ], 500);
         }
     }
