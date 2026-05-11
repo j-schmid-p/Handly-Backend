@@ -17,6 +17,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/professions',[ProfessionController::class, 'index']);
 Route::delete('/users/{id}', [AuthController::class, 'deleteUser']);
 Route::post('/upload-documents', [UserController::class, 'uploadDocuments']);
+oute::post('/verify-email', [AuthController::class, 'verifyEmail']); // codigo de verificacion correo
 
 // rutas protegidas (acceso mediante token)
 Route::middleware('auth:sanctum')->group(function (){
@@ -67,8 +68,6 @@ Route::middleware('auth:sanctum')->group(function (){
     Route::post('/reports', [ReportController::class, 'store']); //  un usuario envíe una denuncia
     Route::get('/admin/reports', [ReportController::class, 'index']); // ver todas las denuncias 
     Route::patch('/admin/reports/{id}/status', [ReportController::class, 'updateStatus']); // Cambiar estado
-
-    Route::post('/verify-email', [AuthController::class, 'verifyEmail']); // codigo de verificacion correo
     
 });
 
