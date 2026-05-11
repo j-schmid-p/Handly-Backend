@@ -16,6 +16,7 @@ Route::post('/register/professional', [AuthController::class, 'registerProfessio
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/professions',[ProfessionController::class, 'index']);
 Route::delete('/users/{id}', [AuthController::class, 'deleteUser']);
+Route::post('/upload-documents', [UserController::class, 'uploadDocuments']);
 
 // rutas protegidas (acceso mediante token)
 Route::middleware('auth:sanctum')->group(function (){
@@ -27,7 +28,7 @@ Route::middleware('auth:sanctum')->group(function (){
     Route::get('/clients', [UserController::class, 'getClients']);
     Route::get('/clients/{id}', [UserController::class, 'getClientDetails']);
     Route::patch('/users/{id}/state', [UserController::class, 'changeState']); // admin banear o reactivar usuario
-    Route::post('/upload-documents', [UserController::class, 'uploadDocuments']);
+    
     
     Route::post('/logout', [AuthController::class, 'logout']);
 
