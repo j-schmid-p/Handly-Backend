@@ -101,6 +101,9 @@ class AuthController extends Controller
 
         try {
             DB::beginTransaction();
+
+            // codigo para verificacion
+            $codigoVerificacion = (string) rand(100000, 999999);
              
             //insertar en Users
             $userId = DB::table('Users')->insertGetId([
@@ -112,6 +115,7 @@ class AuthController extends Controller
                 'mobile' => $request->mobile,       // <-- Si no lo mandan, Laravel pondrá null
                 'birthdate' => $request->birthdate,
                 'password' => Hash::make($request->password),
+                'verification_code' => $codigoVerificacion
             ]);
 
             //insertar en App_users
@@ -122,7 +126,7 @@ class AuthController extends Controller
                 'postal_code' => $request->postal_code,
                 'country' => $request->country,
                 'last_connection' => now(), //fecha actual automática
-                'account_state_id' => 1, // 1 = active
+                'account_state_id' => 3, // 3 = pending de default
                 'account_creation_date' => now(),
             ]);
 
@@ -143,7 +147,8 @@ class AuthController extends Controller
 
             return response()->json([
                 'status'=>'success',
-                'message'=>'professional added'
+                'message'=>'professional added',
+                'codigo_secreto' => $codigoVerificacion
             ],201);
 
         } catch (\Exception $e){
