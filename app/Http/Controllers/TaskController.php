@@ -28,16 +28,13 @@ class TaskController extends Controller
                 ], 403); // Prohibido
             }
 
-            $photo1 = null;
-            if ($request->filled('photo_1')) {
-                // Guardamos el texto Base64 tal cual llega
-                $photo1 = $request->photo_1; 
-            }
+            // multimedia y horario
+            $photo1 = $request->filled('photo_1') ? $request->photo_1 : null;
+            $photo2 = $request->filled('photo_2') ? $request->photo_2 : null;
+            $video1 = $request->filled('video_1') ? $request->video_1 : null;
+            $video2 = $request->filled('video_2') ? $request->video_2 : null;
 
-            $photo2 = null;
-            if ($request->filled('photo_2')) {
-                $photo2 = $request->photo_2;
-            }
+            $timePref = $request->filled('time_preference') ? $request->time_preference : 'lo antes posible';
 
             $taskId = DB::table('Tasks')->insertGetId([
                 'client_id' => $client->client_id,
@@ -49,7 +46,10 @@ class TaskController extends Controller
                 'token_qr' => Str::random(20), // Generamos un código QR aleatorio y único
                 'creation_date' => now(),
                 'photo_1' => $photo1,
-                'photo_2' => $photo2
+                'photo_2' => $photo2,
+                'video_1' => $video1,
+                'video_2' => $video2,
+                'time_preference' => $timePref
             ]);
 
             return response()->json([
@@ -84,16 +84,17 @@ class TaskController extends Controller
             }
 
             $tasks = DB::table('Tasks')
-                ->join('Task_states', 'Tasks.task_state_id', '=', 'Task_states.id')
-                ->join('Client', 'Tasks.client_id', '=', 'Client.id') // unir con datos cliente
-                ->join('App_users', 'Client.app_user_id', '=', 'App_users.id')
-                ->join('Users', 'App_users.user_id', '=', 'Users.id')
+                ->leftjoin('Task_states', 'Tasks.task_state_id', '=', 'Task_states.id')
+                ->leftjoin('Client', 'Tasks.client_id', '=', 'Client.id') // unir con datos cliente
+                ->leftjoin('App_users', 'Client.app_user_id', '=', 'App_users.id')
+                ->leftjoin('Users', 'App_users.user_id', '=', 'Users.id')
                 ->where('Tasks.professional_id', '=', $professional->professional_id)
                 ->select(
                     'Tasks.id as task_id',
                     'Tasks.title',
                     'Tasks.description',
                     'Tasks.creation_date',
+                    'Tasks.time_preference',
                     'Task_states.name as status',
                     'Users.name as client_name',
                     'Users.surname as client_surname',
@@ -107,14 +108,17 @@ class TaskController extends Controller
                     if ($task->creation_date) {
                         $task->creation_date = \Carbon\Carbon::parse($task->creation_date)->format('d/m/Y');
                     }
-                    if ($task->accorded_date) {
-                        $task->accorded_date = \Carbon\Carbon::parse($task->accorded_date)->format('d/m/Y');
+                    // Si por algún motivo el cliente no existe, ponemos un texto por defecto
+                    if (!$task->client_name) {
+                        $task->client_name = 'Cliente';
+                        $task->client_surname = 'Desconocido';
+                        $task->client_city = 'Ubicación no disponible';
                     }
                     return $task;
                 });
                 
             return response()->json([
-                'status'=>'succes',
+                'status'=>'success',
                 'data'=>$tasks
             ],200);
 
@@ -167,6 +171,25 @@ class TaskController extends Controller
             ->where('id',$id)
             ->update(['task_state_id' => $newStateId]);
 
+            // notis 
+            if ($newStateId == 3) {
+                $clientAppUser = DB::table('Client')
+                    ->join('App_users', 'Client.app_user_id', '=', 'App_users.id')
+                    ->where('Client.id', $task->client_id)
+                    ->select('App_users.user_id')
+                    ->first();
+
+                if ($clientAppUser) {
+                    DB::table('Notifications')->insert([
+                        'user_id' => $clientAppUser->user_id,
+                        'task_id' => $id,
+                        'title' => 'Solicitud rechazada',
+                        'message' => 'Lamentablemente el profesional no puede realizar tu solicitud en este momento.',
+                        'is_read' => 0,
+                        'created_at' => now()
+                    ]);
+                }
+            }
             return response()->json([
                 'status' => 'success',
                 'message' => '¡El estado de la tarea se ha actualizado correctamente!'
@@ -208,6 +231,7 @@ class TaskController extends Controller
                     'Tasks.title',
                     'Tasks.description',
                     'Tasks.task_state_id',
+                    'Tasks.time_preference',
                     'Tasks.creation_date as task_date',
                     'Budgets.id as budget_id',
                     'Budgets.agreed_price',
@@ -250,6 +274,11 @@ class TaskController extends Controller
                     'Tasks.title',
                     'Tasks.description',
                     'Tasks.creation_date',
+                    'Tasks.time_preference',
+                    'Tasks.photo_1',
+                    'Tasks.photo_2',
+                    'Tasks.video_1',
+                    'Tasks.video_2',
                     'Task_states.name as status_name',
                     'Task_states.id as status_id',
                     'Users.name as client_name',
@@ -409,4 +438,34 @@ class TaskController extends Controller
             ], 500);
         }
     }
+
+    public function getMyNotifications(Request $request)
+    {
+        try {
+            $user = $request->user();
+
+            $notifications = DB::table('Notifications')
+                ->where('user_id', $user->id)
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            // Opcional: Marcar todas como leídas al solicitarlas
+            DB::table('Notifications')
+                ->where('user_id', $user->id)
+                ->where('is_read', 0)
+                ->update(['is_read' => 1]);
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $notifications
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error al obtener notificaciones: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 }

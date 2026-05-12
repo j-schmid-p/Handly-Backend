@@ -46,6 +46,7 @@ Route::middleware('auth:sanctum')->group(function (){
     Route::put('/tasks/{id}', [TaskController::class, 'update']);
     Route::delete('/tasks/{id}', [TaskController::class, 'destroy']);
     Route::get('/admin/transactions', [TaskController::class, 'getAllTransactions']); //todas las transacciones 
+    Route::get('/notifications', [TaskController::class, 'getMyNotifications']); //  notis 
 
 
     Route::post('/tasks/{id}/budget', [BudgetController::class, 'store']); // enviar presupuesto
