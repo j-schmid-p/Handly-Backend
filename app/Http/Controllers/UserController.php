@@ -215,7 +215,7 @@ class UserController extends Controller
                 'birthdate' => $user->birthdate,
             ];
 
-            // si tiene datos de dirección (App_users), los añadimos 
+            // si tiene datos de dirección (App_users), los añadimos
             if ($appUser) {
                 $userData['address'] = [
                     'street_number' => $appUser->street_number,
@@ -354,7 +354,7 @@ class UserController extends Controller
         try {
             // Limpiamos el email para usarlo como nombre de carpeta
             $userEmail = str_replace('@', '_at_', $request->email);
-            
+
             // 3. Guardamos las fotos en la carpeta storage/app/public/documents/...
             $selfiePath = $request->file('selfie')->store("documents/{$userEmail}", 'public');
             $frontPath = $request->file('document_front')->store("documents/{$userEmail}", 'public');
