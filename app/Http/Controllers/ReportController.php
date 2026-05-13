@@ -62,9 +62,11 @@ class ReportController extends Controller
                     'Report_states.id as state_id',
                     'Report_states.name as state_name',
                     'Reports.reporter_id', //JULIA : cambiado esta linea
+                    'Reporter.id as reporter_user_id', //JULIA : cambiado esta linea
                     'Reporter.name as reporter_name',
                     'Reporter.surname as reporter_surname',
                     'Reports.reportee_id', //JULIA : cambiado esta linea
+                    'Reportee.id as reportee_user_id', //JULIA : cambiado esta linea
                     'Reportee.name as reportee_name',
                     'Reportee.surname as reportee_surname'
                 )
