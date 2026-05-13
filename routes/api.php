@@ -72,6 +72,9 @@ Route::middleware('auth:sanctum')->group(function (){
     //JULIA : añadido endpoint
     Route::get('/admin/report-states', [ReportController::class, 'getReportStates']); // lista de estados (para dropdown admin)
 
+    //JULIA : contexto de la denuncia (chats o tareas entre las partes)
+    Route::get('/admin/reports/{id}/context', [ReportController::class, 'getContext']);
+
 });
 
 

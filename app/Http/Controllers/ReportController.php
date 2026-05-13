@@ -106,6 +106,132 @@ class ReportController extends Controller
         }
     }
 
+    // JULIA : añadido para el admin app
+    // GET /api/admin/reports/{id}/context - devuelve los chats o las tareas entre
+    // las dos partes de la denuncia. Los Reports no almacenan chat_id ni task_id,
+    // así que buscamos por el par de usuarios.
+    public function getContext($id)
+    {
+        try {
+            // 1. cargar la denuncia y validar que existe
+            $report = DB::table('Reports')->where('id', $id)->first();
+            if (!$report) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Denuncia no encontrada.'
+                ], 404);
+            }
+
+            // 2. encontrar Client.id y Professional.id de cada parte
+            // reporter_id y reportee_id son App_users.id
+            $reporterClient = DB::table('Client')->where('app_user_id', $report->reporter_id)->first();
+            $reporterProfessional = DB::table('Professional')->where('app_user_id', $report->reporter_id)->first();
+            $reporteeClient = DB::table('Client')->where('app_user_id', $report->reportee_id)->first();
+            $reporteeProfessional = DB::table('Professional')->where('app_user_id', $report->reportee_id)->first();
+
+            // 3. listar los pares (clientId, professionalId) posibles que conecten a las dos partes
+            $pairs = [];
+            if ($reporterClient && $reporteeProfessional) {
+                $pairs[] = ['client_id' => $reporterClient->id, 'professional_id' => $reporteeProfessional->id];
+            }
+            if ($reporteeClient && $reporterProfessional) {
+                $pairs[] = ['client_id' => $reporteeClient->id, 'professional_id' => $reporterProfessional->id];
+            }
+
+            $chats = [];
+            $tasks = [];
+
+            $origin = strtolower($report->report_origin ?: '');
+
+            if (!empty($pairs)) {
+                if ($origin === 'chat') {
+                    // buscar chats que conecten a las dos partes
+                    $chatsQuery = DB::table('Chats');
+                    $chatsQuery->where(function ($q) use ($pairs) {
+                        foreach ($pairs as $p) {
+                            $q->orWhere(function ($qq) use ($p) {
+                                $qq->where('Chats.client_id', $p['client_id'])
+                                   ->where('Chats.professional_id', $p['professional_id']);
+                            });
+                        }
+                    });
+                    $chatRows = $chatsQuery->get();
+
+                    foreach ($chatRows as $c) {
+                        $messages = DB::table('Messages')
+                            ->where('chat_id', $c->id)
+                            ->orderBy('message_date')
+                            ->get()
+                            ->map(function ($m) {
+                                if ($m->message_date) {
+                                    $m->message_date = \Carbon\Carbon::parse($m->message_date)
+                                        ->format('Y-m-d H:i:s');
+                                }
+                                return $m;
+                            });
+
+                        $chats[] = [
+                            'id' => $c->id,
+                            'task_id' => $c->task_id,
+                            'client_id' => $c->client_id,
+                            'professional_id' => $c->professional_id,
+                            'messages' => $messages,
+                        ];
+                    }
+                } elseif ($origin === 'task' || $origin === 'tarea') {
+                    // buscar tareas que conecten a las dos partes
+                    $taskQuery = DB::table('Tasks')
+                        ->leftJoin('Task_states', 'Tasks.task_state_id', '=', 'Task_states.id');
+                    $taskQuery->where(function ($q) use ($pairs) {
+                        foreach ($pairs as $p) {
+                            $q->orWhere(function ($qq) use ($p) {
+                                $qq->where('Tasks.client_id', $p['client_id'])
+                                   ->where('Tasks.professional_id', $p['professional_id']);
+                            });
+                        }
+                    });
+                    $taskRows = $taskQuery->select(
+                        'Tasks.id',
+                        'Tasks.title',
+                        'Tasks.description',
+                        'Tasks.task_state_id',
+                        'Task_states.name as task_state_name',
+                        'Tasks.creation_date',
+                        'Tasks.client_id',
+                        'Tasks.professional_id',
+                        'Tasks.profession_id'
+                    )->get()->map(function ($t) {
+                        if ($t->creation_date) {
+                            $t->creation_date = \Carbon\Carbon::parse($t->creation_date)
+                                ->format('Y-m-d H:i:s');
+                        }
+                        return $t;
+                    });
+
+                    foreach ($taskRows as $t) {
+                        $tasks[] = $t;
+                    }
+                }
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'report_id' => $report->id,
+                    'report_origin' => $report->report_origin,
+                    'chats' => $chats,
+                    'tasks' => $tasks,
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error al obtener el contexto: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     // Cambiar el estado de la denuncia
     public function updateStatus(Request $request, $id)
     {
