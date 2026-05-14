@@ -66,7 +66,7 @@ class BudgetController extends Controller {
                     'title' => 'Nuevo presupuesto recibido',
                     'message' => 'Un profesional ha enviado un presupuesto para tu tarea.',
                     'is_read' => 0,
-                    'created_at' => now() 
+                    'creation_date' => now() 
                 ]);
             }
 
@@ -153,7 +153,7 @@ class BudgetController extends Controller {
                     'title' => 'Presupuesto aceptado',
                     'message' => '¡El cliente ha aceptado tu oferta! Ya puedes empezar el trabajo.',
                     'is_read' => 0,
-                    'created_at' => now()
+                    'creation_date' => now()
                 ]);
             }
 
