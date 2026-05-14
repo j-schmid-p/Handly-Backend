@@ -186,7 +186,7 @@ class TaskController extends Controller
                         'title' => 'Solicitud rechazada',
                         'message' => 'Lamentablemente el profesional no puede realizar tu solicitud en este momento.',
                         'is_read' => 0,
-                        'created_at' => now()
+                        'creation_date' => now()
                     ]);
                 }
             }
