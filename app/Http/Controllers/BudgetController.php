@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class BudgetController extends Controller {
     public function store(Request $request, $taskId)
     {
         $request->validate([
-            'agreed_price' => 'required|numeric|min:0'
+            'agreed_price' => 'required|numeric|min:0',
+            'notes' => 'nullable|string',
+            'includes_materials' => 'required|boolean'
         ]);
 
         try {
@@ -43,9 +46,29 @@ class BudgetController extends Controller {
             $budgetId = DB::table('Budgets')->insertGetId([
                 'job_id' => $taskId, 
                 'agreed_price' => $request->agreed_price,
+                'notes' => $request->notes, 
+                'includes_materials' => $request->includes_materials, 
                 'budget_state_id' => 1, // 1 = Pendiente 
                 'creation_date' => now()
             ]);
+
+            // logica de notis
+            $clientAppUser = DB::table('Client')
+                ->join('App_users', 'Client.app_user_id', '=', 'App_users.id')
+                ->where('Client.id', $task->client_id)
+                ->select('App_users.user_id')
+                ->first();
+
+            if ($clientAppUser) {
+                DB::table('Notifications')->insert([
+                    'user_id' => $clientAppUser->user_id,
+                    'task_id' => $taskId,
+                    'title' => 'Nuevo presupuesto recibido',
+                    'message' => 'Un profesional ha enviado un presupuesto para tu tarea.',
+                    'is_read' => 0,
+                    'created_at' => now() 
+                ]);
+            }
 
             DB::commit();
 
@@ -104,20 +127,42 @@ class BudgetController extends Controller {
                 ], 403);
             }
 
+            // generar qr
+            $nuevoQr = Str::random(20);
+
             // actualizar estados
             DB::table('Budgets')->where('id', $budgetId)->update([
-                'budget_state_id' => 2 // 2 = accepted
+                'budget_state_id' => 2 // 2 = negociating
             ]);
 
             DB::table('Tasks')->where('id', $task->id)->update([
-                'task_state_id' => 2 // 2 = negotiating
+                'task_state_id' => 4, // 4 accepted
+                'token_qr' => $nuevoQr 
             ]); 
+
+            $profAppUser = DB::table('Professional')
+                ->join('App_users', 'Professional.app_user_id', '=', 'App_users.id')
+                ->where('Professional.id', $task->professional_id)
+                ->select('App_users.user_id')
+                ->first();
+
+            if ($profAppUser) {
+                DB::table('Notifications')->insert([
+                    'user_id' => $profAppUser->user_id,
+                    'task_id' => $task->id,
+                    'title' => 'Presupuesto aceptado',
+                    'message' => '¡El cliente ha aceptado tu oferta! Ya puedes empezar el trabajo.',
+                    'is_read' => 0,
+                    'created_at' => now()
+                ]);
+            }
 
             DB::commit();
 
             return response()->json([
                 'status' => 'success',
-                'message' => '¡Presupuesto aceptado! El profesional ya puede empezar a trabajar.'
+                'message' => '¡Presupuesto aceptado! El profesional ya puede empezar a trabajar.',
+                'token_qr' => $nuevoQr
             ], 200);
 
         } catch (\Exception $e) {
