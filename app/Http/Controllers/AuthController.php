@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB; // hablar con bd
 use Illuminate\Support\Facades\Hash; // encriptación
 use Illuminate\Validation\Rules\Password; // reglas contraseña
 use App\Models\User; //modelo User
+use Illuminate\Support\Facades\Mail; // para verificacion de mail
 
 class AuthController extends Controller
 {
@@ -26,8 +27,11 @@ class AuthController extends Controller
 
         try {
             DB::beginTransaction();
-             //insertar en Users
+ 
+            // generar codigo
+            $codigoVerificacion = (string) rand(100000, 999999);
 
+             //insertar en Users
             $userId = DB::table('Users')->insertGetId([
                 'rol_id' => 1, //Cliente
                 'name' => $request->name,
@@ -37,6 +41,7 @@ class AuthController extends Controller
                 'mobile' => null, 
                 'birthdate' => null,
                 'password' => Hash::make($request->password),
+                'verification_code' => $codigoVerificacion
             ]);
 
             //insertar en App_users
@@ -59,9 +64,11 @@ class AuthController extends Controller
             // esto solo si lo demas se hizo bien
             DB::commit();
 
+            // enviar codigo
             return response()->json ([
                 'status'=> 'success',
-                'message'=>'Cliente registrado correctamente'
+                'message'=>'Cliente registrado correctamente.',
+                'codigo_secreto' => $codigoVerificacion
             ],201);
 
             // si no rollback
@@ -87,6 +94,8 @@ class AuthController extends Controller
             'city' => 'required|string',
             'postal_code' => 'required|string',
             'country' => 'required|string',
+            'mobile' => 'nullable|string', // <-- Nulleable significa opcional
+            'birthdate' => 'nullable|date',
             'professions' => 'required|array|min:1|max:5' // lista de oficios en formato array 
         ]);
 
@@ -100,8 +109,8 @@ class AuthController extends Controller
                 'surname'=> $request->surname,
                 'dni'=> $request ->dni,
                 'email' => $request->email,
-                'mobile' => null, //vacio si no manda
-                'birthdate' => null,
+                'mobile' => $request->mobile,       // <-- Si no lo mandan, Laravel pondrá null
+                'birthdate' => $request->birthdate,
                 'password' => Hash::make($request->password),
             ]);
 
@@ -183,6 +192,82 @@ class AuthController extends Controller
         return response()->json([
             'status'=>'success',
             'message'=>'sesion cerrada'
+        ]);
+    }
+
+    public function deleteUser($id) {
+        try {
+            DB::beginTransaction();
+
+            // 1. buscar si esta  en App_users
+            $appUser = DB::table('App_users')->where('user_id', $id)->first();
+
+            if ($appUser) {
+                // si es profesional borrar sus oficios y su perfil
+                $professional = DB::table('Professional')->where('app_user_id', $appUser->id)->first();
+                if ($professional) {
+                    DB::table('Professional_profession')->where('professional_id', $professional->id)->delete();
+                    DB::table('Professional')->where('id', $professional->id)->delete();
+                }
+
+                // si por error se guardó como cliente, borrar su perfil
+                DB::table('Client')->where('app_user_id', $appUser->id)->delete();
+
+                // borrar de App_users
+                DB::table('App_users')->where('id', $appUser->id)->delete();
+            }
+
+            // 5. borrar los tokens de acceso que tuviera generados
+            DB::table('personal_access_tokens')->where('tokenable_id', $id)->delete();
+
+            // 6. borrar el Usuario
+            $deleted = DB::table('Users')->where('id', $id)->delete();
+
+            if (!$deleted) {
+                throw new \Exception("El usuario con ID $id no existe.");
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Usuario borrado de la faz de la tierra de forma segura.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Hubo un error al borrar: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function verifyEmail(Request $request) {
+        $request->validate([
+            'email' => 'required|email',
+            'code' => 'required|string'
+        ]);
+
+        // Buscamos al usuario por su email
+        $user = DB::table('Users')->where('email', $request->email)->first();
+
+        // Si no existe o el código no coincide...
+        if (!$user || $user->verification_code !== $request->code) {
+            return response()->json([
+                'status' => 'error', 
+                'message' => 'El código es incorrecto o el usuario no existe.'
+            ], 400);
+        }
+
+        // Si es correcto: Borramos el código para que no se pueda reusar
+        DB::table('Users')->where('id', $user->id)->update([
+            'verification_code' => null
+        ]);
+
+        return response()->json([
+            'status' => 'success', 
+            'message' => 'Cuenta verificada correctamente.'
         ]);
     }
 }

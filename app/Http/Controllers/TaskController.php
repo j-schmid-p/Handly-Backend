@@ -254,7 +254,7 @@ class TaskController extends Controller
                     'Task_states.id as status_id',
                     'Users.name as client_name',
                     'Users.surname as client_surname',
-                    'App_users.city as client_city'
+                    'App_users.city as client_city',
                     'Budgets.id as budget_id',
                     'Budgets.agreed_price',
                     'Budgets.budget_state_id'
@@ -331,6 +331,81 @@ class TaskController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Error al obtener el listado global de tareas: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // devuelve todas las transacciones con datos de cliente, profesional, tarea, recibos
+    public function getAllTransactions()
+    {
+        try {
+            $tasks = DB::table('Tasks')->get();
+            $transactions = [];
+
+            foreach ($tasks as $task) {
+                // buscar datos del Cliente
+                $client = DB::table('Client')
+                    ->join('App_users', 'Client.app_user_id', '=', 'App_users.id')
+                    ->join('Users', 'App_users.user_id', '=', 'Users.id')
+                    ->where('Client.id', $task->client_id)
+                    ->select('Users.id', 'Users.name', 'Users.surname')
+                    ->first();
+
+                // buscar datos del Profesional
+                $professional = DB::table('Professional')
+                    ->join('App_users', 'Professional.app_user_id', '=', 'App_users.id')
+                    ->join('Users', 'App_users.user_id', '=', 'Users.id')
+                    ->where('Professional.id', $task->professional_id)
+                    ->select('Users.id', 'Users.name', 'Users.surname')
+                    ->first();
+
+                // buscar el nombre de la Profesión
+                $profession = DB::table('Professions')->where('id', $task->profession_id)->first();
+
+                // buscar el Invoice vinculado a esta tarea
+                $invoice = DB::table('Invoices')->where('task_id', $task->id)->first();
+
+                // JSON que necesita el admin
+                $transactions[] = [
+                    'task' => [
+                        'id' => $task->id,
+                        'title' => $task->title,
+                        'description' => $task->description ?? '',
+                        'task_state_id' => $task->task_state_id,
+                        'creation_date' => $task->creation_date,
+                        'client' => $client ? [
+                            'id' => $client->id,
+                            'name' => $client->name,
+                            'surname' => $client->surname
+                        ] : null,
+                        'professional' => $professional ? [
+                            'id' => $professional->id,
+                            'name' => $professional->name,
+                            'surname' => $professional->surname
+                        ] : null,
+                        'profession_name' => $profession ? $profession->name_profession: 'No asignada'
+                    ],
+                    // Si hay factura la mandamos, si no, null
+                    'invoice' => $invoice ? [
+                        'id' => $invoice->id,
+                        'total_payment' => (float) $invoice->total_payment,
+                        'payment_method' => $invoice->payment_method,
+                        'payment_date' => $invoice->payment_date,
+                        'professional_revenue' => (float) $invoice->professional_revenue,
+                        'app_comission' => (float) $invoice->app_comission
+                    ] : null
+                ];
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $transactions // Esto enviará la lista completa 
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error al obtener las transacciones: ' . $e->getMessage()
             ], 500);
         }
     }
