@@ -16,6 +16,8 @@ Route::post('/register/professional', [AuthController::class, 'registerProfessio
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/professions',[ProfessionController::class, 'index']);
 Route::delete('/users/{id}', [AuthController::class, 'deleteUser']);
+Route::post('/upload-documents', [UserController::class, 'uploadDocuments']);
+Route::post('/verify-email', [AuthController::class, 'verifyEmail']); // codigo de verificacion correo
 
 // rutas protegidas (acceso mediante token)
 Route::middleware('auth:sanctum')->group(function (){
@@ -27,6 +29,7 @@ Route::middleware('auth:sanctum')->group(function (){
     Route::get('/clients', [UserController::class, 'getClients']);
     Route::get('/clients/{id}', [UserController::class, 'getClientDetails']);
     Route::patch('/users/{id}/state', [UserController::class, 'changeState']); // admin banear o reactivar usuario
+    
     
     Route::post('/logout', [AuthController::class, 'logout']);
 
@@ -43,6 +46,7 @@ Route::middleware('auth:sanctum')->group(function (){
     Route::put('/tasks/{id}', [TaskController::class, 'update']);
     Route::delete('/tasks/{id}', [TaskController::class, 'destroy']);
     Route::get('/admin/transactions', [TaskController::class, 'getAllTransactions']); //todas las transacciones 
+    Route::get('/notifications', [TaskController::class, 'getMyNotifications']); //  notis 
 
 
     Route::post('/tasks/{id}/budget', [BudgetController::class, 'store']); // enviar presupuesto
@@ -65,8 +69,7 @@ Route::middleware('auth:sanctum')->group(function (){
     Route::post('/reports', [ReportController::class, 'store']); //  un usuario envíe una denuncia
     Route::get('/admin/reports', [ReportController::class, 'index']); // ver todas las denuncias 
     Route::patch('/admin/reports/{id}/status', [ReportController::class, 'updateStatus']); // Cambiar estado
-
-    Route::post('/verify-email', [AuthController::class, 'verifyEmail']); // codigo de verificacion correo
+    
 });
 
 
