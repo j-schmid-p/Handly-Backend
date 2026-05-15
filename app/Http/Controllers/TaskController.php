@@ -449,7 +449,7 @@ class TaskController extends Controller
 
             $notifications = DB::table('Notifications')
                 ->where('user_id', $user->id)
-                ->orderBy('created_at', 'desc')
+                ->orderBy('creation_date', 'desc')
                 ->get();
 
             // Opcional: Marcar todas como leídas al solicitarlas
