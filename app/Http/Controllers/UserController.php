@@ -35,6 +35,10 @@ class UserController extends Controller
                     'App_users.account_state_id',
                     'App_users.last_connection',
                     'App_users.account_creation_date',
+                    // JULIA : imagenes verificacion identidad
+                    'App_users.selfie',
+                    'App_users.document_front',
+                    'App_users.document_back',
                     'Professional.id as professional_id'
                 )
                 ->orderBy('Users.id')
@@ -51,7 +55,7 @@ class UserController extends Controller
                         ->toArray();
                 }
                 $u->profession = $profession;
-                unset($u->professional_id); // no lo necesita el cliente
+                unset($u->professional_id);
             }
 
             return response()->json([
