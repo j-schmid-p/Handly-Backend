@@ -206,39 +206,42 @@ class UserController extends Controller
     }
 
     public function uploadDocuments(Request $request) {
-        // validamos que lleguen las 3 imágenes y el email del usuario
+        // 1. Validamos que lleguen las 3 imágenes y el email del usuario
         $request->validate([
-            'email' => 'required|email|exists:Users,email', // para saber quién es
+            'email' => 'required|email|exists:Users,email', // Valida que el email exista en la BD
             'selfie' => 'required|file|image|max:5120', // Máximo 5MB por foto
             'document_front' => 'required|file|image|max:5120',
             'document_back' => 'required|file|image|max:5120',
         ]);
 
         try {
-            // Limpiamos el email para usarlo como nombre de carpeta
-            $userEmail = str_replace('@', '_at_', $request->email);
-            
-            // 3. Guardamos las fotos en la carpeta storage/app/public/documents/...
-            $selfiePath = $request->file('selfie')->store("documents/{$userEmail}", 'public');
-            $frontPath = $request->file('document_front')->store("documents/{$userEmail}", 'public');
-            $backPath = $request->file('document_back')->store("documents/{$userEmail}", 'public');
+            DB::beginTransaction();
 
-            // este sería el momento de hacer un UPDATE en la tabla App_users usando el email.
-            /*
+            // 2. Buscamos al usuario por su email
             $user = DB::table('Users')->where('email', $request->email)->first();
+
+            // Convertimos las fotos a texto Base64
+            $selfieBase64 = 'data:' . $request->file('selfie')->getMimeType() . ';base64,' . base64_encode(file_get_contents($request->file('selfie')->getRealPath()));
+            $docFrontBase64 = 'data:' . $request->file('document_front')->getMimeType() . ';base64,' . base64_encode(file_get_contents($request->file('document_front')->getRealPath()));
+            $docBackBase64 = 'data:' . $request->file('document_back')->getMimeType() . ';base64,' . base64_encode(file_get_contents($request->file('document_back')->getRealPath()));
+
+            // 4. Hacemos el UPDATE en la tabla App_users usando el ID del usuario
             DB::table('App_users')->where('user_id', $user->id)->update([
-                'selfie_path' => $selfiePath,
-                'doc_front_path' => $frontPath,
-                'doc_back_path' => $backPath
+                'selfie' => $selfieBase64,
+                'document_front' => $docFrontBase64,
+                'document_back' => $docBackBase64,
+                'account_state_id' => 4 // Pasamos la cuenta a estado "in revision"
             ]);
-            */
+
+            DB::commit();
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Documentos recibidos y guardados correctamente.'
+                'message' => 'Documentos recibidos, guardados en BD y cuenta en revisión.'
             ], 200);
 
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'status' => 'error',
                 'message' => 'Error al guardar los documentos: ' . $e->getMessage()
