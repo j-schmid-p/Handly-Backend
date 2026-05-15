@@ -9,11 +9,12 @@ services:
     environment:
       - PORT=80
       - DB_CONNECTION=pgsql
-      - DB_HOST=host.docker.internal
+      - DB_HOST=dpg-d81miju7r5hc73fhc6s0-a.frankfurt-postgres.render.com
       - DB_PORT=5432
-      - DB_DATABASE=handly
-      - DB_USERNAME=postgres
-      - DB_PASSWORD=1234
+      - DB_DATABASE=handly_db
+      - DB_USERNAME=handly_db_user
+      - DB_PASSWORD=lQxUIiBWbWknB7cklaZjc8b5WRMUzy58
+      - DB_SSLMODE=require
       - APP_ENV=local
       - APP_DEBUG=true
     volumes:
