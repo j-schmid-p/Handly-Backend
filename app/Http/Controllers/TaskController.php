@@ -11,6 +11,8 @@ class TaskController extends Controller
     public function store(Request $request)
     {
         try {
+            DB::beginTransaction(); // Añadimos seguridad por si falla la subida de fotos
+            
             // quién es el cliente 
             $user = $request->user();
 
@@ -25,14 +27,38 @@ class TaskController extends Controller
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Solo los clientes registrados pueden solicitar tareas.'
-                ], 403); // Prohibido
+                ], 403); 
             }
 
-            // multimedia y horario
-            $photo1 = $request->filled('photo_1') ? $request->photo_1 : null;
-            $photo2 = $request->filled('photo_2') ? $request->photo_2 : null;
-            $video1 = $request->filled('video_1') ? $request->video_1 : null;
-            $video2 = $request->filled('video_2') ? $request->video_2 : null;
+            // Convertimos fotos a Base64 si vienen como archivo 
+            $photo1 = null;
+            if ($request->hasFile('photo_1')) {
+                $photo1 = 'data:' . $request->file('photo_1')->getMimeType() . ';base64,' . base64_encode(file_get_contents($request->file('photo_1')->getRealPath()));
+            } elseif ($request->filled('photo_1')) {
+                $photo1 = $request->photo_1; // Por si lo mandan ya convertido a texto desde Ionic
+            }
+
+            $photo2 = null;
+            if ($request->hasFile('photo_2')) {
+                $photo2 = 'data:' . $request->file('photo_2')->getMimeType() . ';base64,' . base64_encode(file_get_contents($request->file('photo_2')->getRealPath()));
+            } elseif ($request->filled('photo_2')) {
+                $photo2 = $request->photo_2;
+            }
+
+            $video1 = null;
+            if ($request->hasFile('video_1')) {
+                $video1 = 'data:' . $request->file('video_1')->getMimeType() . ';base64,' . base64_encode(file_get_contents($request->file('video_1')->getRealPath()));
+            } elseif ($request->filled('video_1')) {
+                $video1 = $request->video_1;
+            }
+
+            $video2 = null;
+            if ($request->hasFile('video_2')) {
+                $video2 = 'data:' . $request->file('video_2')->getMimeType() . ';base64,' . base64_encode(file_get_contents($request->file('video_2')->getRealPath()));
+            } elseif ($request->filled('video_2')) {
+                $video2 = $request->video_2;
+            }
+           
 
             $timePref = $request->filled('time_preference') ? $request->time_preference : 'lo antes posible';
 
@@ -52,6 +78,8 @@ class TaskController extends Controller
                 'time_preference' => $timePref
             ]);
 
+            DB::commit();
+
             return response()->json([
                 'status' => 'success',
                 'message' => '¡Trabajo solicitado con éxito al profesional!',
@@ -59,6 +87,7 @@ class TaskController extends Controller
             ], 201); // Creado
 
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'status' => 'error',
                 'message' => 'Error al crear la solicitud: ' . $e->getMessage()
