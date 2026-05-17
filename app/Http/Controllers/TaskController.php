@@ -383,7 +383,10 @@ class TaskController extends Controller
                             'name' => $professional->name,
                             'surname' => $professional->surname
                         ] : null,
-                        'profession_name' => $profession ? $profession->name_profession: 'No asignada'
+                        'profession_name' => $profession ? $profession->name_profession: 'No asignada',
+                        // JULIA : fotos asociadas a la tarea (bytea -> base64 para JSON)
+                        'photo_1' => $task->photo_1 ? base64_encode($task->photo_1) : null,
+                        'photo_2' => $task->photo_2 ? base64_encode($task->photo_2) : null
                     ],
                     // Si hay factura la mandamos, si no, null
                     'invoice' => $invoice ? [

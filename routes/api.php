@@ -10,6 +10,7 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\CatalogController; // JULIA
 
 Route::post('/register/client', [AuthController::class, 'registerClient']);
 Route::post('/register/professional', [AuthController::class, 'registerProfessional']);
