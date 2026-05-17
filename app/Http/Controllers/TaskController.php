@@ -12,8 +12,8 @@ class TaskController extends Controller
     {
         try {
             DB::beginTransaction(); // Añadimos seguridad por si falla la subida de fotos
-            
-            // quién es el cliente 
+
+            // quién es el cliente
             $user = $request->user();
 
             $client = DB::table('Client')
@@ -27,10 +27,10 @@ class TaskController extends Controller
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Solo los clientes registrados pueden solicitar tareas.'
-                ], 403); 
+                ], 403);
             }
 
-            // Convertimos fotos a Base64 si vienen como archivo 
+            // Convertimos fotos a Base64 si vienen como archivo
             $photo1 = null;
             if ($request->hasFile('photo_1')) {
                 $photo1 = 'data:' . $request->file('photo_1')->getMimeType() . ';base64,' . base64_encode(file_get_contents($request->file('photo_1')->getRealPath()));
@@ -58,17 +58,17 @@ class TaskController extends Controller
             } elseif ($request->filled('video_2')) {
                 $video2 = $request->video_2;
             }
-           
+
 
             $timePref = $request->filled('time_preference') ? $request->time_preference : 'lo antes posible';
 
             $taskId = DB::table('Tasks')->insertGetId([
                 'client_id' => $client->client_id,
-                'professional_id' => $request->professional_id, 
-                'profession_id' => $request->profession_id,    
-                'title' => $request->title,                    
-                'description' => $request->description,        
-                'task_state_id' => 1, // 1 = "solicited" 
+                'professional_id' => $request->professional_id,
+                'profession_id' => $request->profession_id,
+                'title' => $request->title,
+                'description' => $request->description,
+                'task_state_id' => 1, // 1 = "solicited"
                 'token_qr' => Str::random(20), // Generamos un código QR aleatorio y único
                 'creation_date' => now(),
                 'photo_1' => $photo1,
@@ -104,7 +104,7 @@ class TaskController extends Controller
                 ->where('App_users.user_id', '=', $user->id)
                 ->select('Professional.id as professional_id')
                 ->first();
-            
+
             if (!$professional){
                 return response()->json([
                     'status' => 'error',
@@ -145,7 +145,7 @@ class TaskController extends Controller
                     }
                     return $task;
                 });
-                
+
             return response()->json([
                 'status'=>'success',
                 'data'=>$tasks
@@ -193,14 +193,14 @@ class TaskController extends Controller
                 ], 403);
             }
 
-            $newStateId = $request->task_state_id; // nuevo estado 
+            $newStateId = $request->task_state_id; // nuevo estado
 
             // actualiza bd con nuevo estado
             DB::table('Tasks')
             ->where('id',$id)
             ->update(['task_state_id' => $newStateId]);
 
-            // notis 
+            // notis
             if ($newStateId == 3) {
                 $clientAppUser = DB::table('Client')
                     ->join('App_users', 'Client.app_user_id', '=', 'App_users.id')
@@ -236,7 +236,7 @@ class TaskController extends Controller
     public function getClientTasks(Request $request){
         try {
             $user=$request->user();
-            
+
             // buscamos al cliente por su token
             $client =DB::table('Client')
             ->join('App_users', 'Client.app_user_id', '=', 'App_users.id')
@@ -321,7 +321,7 @@ class TaskController extends Controller
                     'Budgets.budget_state_id'
                 )
                 ->first();
-            
+
             if (!$task) {
                 return response()->json([
                     'status' => 'error',
@@ -344,9 +344,9 @@ class TaskController extends Controller
                 'status' => 'error',
                 'message' => 'Error al obtener los detalles de la tarea: ' . $e->getMessage()
             ], 500);
-        
+
         }
-               
+
     }
 
     // PARA ADMIN: Obtener todas las tareas del sistema
@@ -444,7 +444,9 @@ class TaskController extends Controller
                             'name' => $professional->name,
                             'surname' => $professional->surname
                         ] : null,
-                        'profession_name' => $profession ? $profession->name_profession: 'No asignada'
+                        'profession_name' => $profession ? $profession->name_profession: 'No asignada',
+                        'photo_1' => $task->photo_1 ? base64_encode($task->photo_1) : null,
+                        'photo_2' => $task->photo_2 ? base64_encode($task->photo_2) : null
                     ],
                     // Si hay factura la mandamos, si no, null
                     'invoice' => $invoice ? [
@@ -460,7 +462,7 @@ class TaskController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $transactions // Esto enviará la lista completa 
+                'data' => $transactions // Esto enviará la lista completa
             ], 200);
 
         } catch (\Exception $e) {
