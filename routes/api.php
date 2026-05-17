@@ -76,6 +76,9 @@ Route::middleware('auth:sanctum')->group(function (){
     //JULIA : contexto de la denuncia (chats o tareas entre las partes)
     Route::get('/admin/reports/{id}/context', [ReportController::class, 'getContext']);
 
+    //JULIA : todos los catálogos (estados, roles) en una sola llamada
+    Route::get('/admin/catalogs', [CatalogController::class, 'index']);
+
 });
 
 
