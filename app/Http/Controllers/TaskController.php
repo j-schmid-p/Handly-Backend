@@ -11,7 +11,7 @@ class TaskController extends Controller
     public function store(Request $request)
     {
         try {
-            // quién es el cliente 
+            // quién es el cliente
             $user = $request->user();
 
             $client = DB::table('Client')
@@ -31,7 +31,7 @@ class TaskController extends Controller
             $photo1 = null;
             if ($request->filled('photo_1')) {
                 // Guardamos el texto Base64 tal cual llega
-                $photo1 = $request->photo_1; 
+                $photo1 = $request->photo_1;
             }
 
             $photo2 = null;
@@ -41,11 +41,11 @@ class TaskController extends Controller
 
             $taskId = DB::table('Tasks')->insertGetId([
                 'client_id' => $client->client_id,
-                'professional_id' => $request->professional_id, 
-                'profession_id' => $request->profession_id,    
-                'title' => $request->title,                    
-                'description' => $request->description,        
-                'task_state_id' => 1, // 1 = "solicited" 
+                'professional_id' => $request->professional_id,
+                'profession_id' => $request->profession_id,
+                'title' => $request->title,
+                'description' => $request->description,
+                'task_state_id' => 1, // 1 = "solicited"
                 'token_qr' => Str::random(20), // Generamos un código QR aleatorio y único
                 'creation_date' => now(),
                 'photo_1' => $photo1,
@@ -75,7 +75,7 @@ class TaskController extends Controller
                 ->where('App_users.user_id', '=', $user->id)
                 ->select('Professional.id as professional_id')
                 ->first();
-            
+
             if (!$professional){
                 return response()->json([
                     'status' => 'error',
@@ -112,7 +112,7 @@ class TaskController extends Controller
                     }
                     return $task;
                 });
-                
+
             return response()->json([
                 'status'=>'succes',
                 'data'=>$tasks
@@ -160,7 +160,7 @@ class TaskController extends Controller
                 ], 403);
             }
 
-            $newStateId = $request->task_state_id; // nuevo estado 
+            $newStateId = $request->task_state_id; // nuevo estado
 
             // actualiza bd con nuevo estado
             DB::table('Tasks')
@@ -184,7 +184,7 @@ class TaskController extends Controller
     public function getClientTasks(Request $request){
         try {
             $user=$request->user();
-            
+
             // buscamos al cliente por su token
             $client =DB::table('Client')
             ->join('App_users', 'Client.app_user_id', '=', 'App_users.id')
@@ -260,7 +260,7 @@ class TaskController extends Controller
                     'Budgets.budget_state_id'
                 )
                 ->first();
-            
+
             if (!$task) {
                 return response()->json([
                     'status' => 'error',
@@ -283,9 +283,9 @@ class TaskController extends Controller
                 'status' => 'error',
                 'message' => 'Error al obtener los detalles de la tarea: ' . $e->getMessage()
             ], 500);
-        
+
         }
-               
+
     }
 
     // PARA ADMIN: Obtener todas las tareas del sistema
@@ -402,7 +402,7 @@ class TaskController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $transactions // Esto enviará la lista completa 
+                'data' => $transactions // Esto enviará la lista completa
             ], 200);
 
         } catch (\Exception $e) {

@@ -68,7 +68,9 @@ class ReportController extends Controller
                     'Reports.reportee_id', //JULIA : cambiado esta linea
                     'Reportee.id as reportee_user_id', //JULIA : cambiado esta linea
                     'Reportee.name as reportee_name',
-                    'Reportee.surname as reportee_surname'
+                    'Reportee.surname as reportee_surname',
+                    'Reporter.rol_id as reporter_rol_id', // JULIA
+                    'Reportee.rol_id as reportee_rol_id', // JULIA
                 )
                 ->get();
 
