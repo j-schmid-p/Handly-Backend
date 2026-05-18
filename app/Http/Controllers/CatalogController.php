@@ -18,6 +18,7 @@ class CatalogController extends Controller
                 'report_states'  => DB::table('Report_states')->orderBy('id')->get(),
                 'roles'          => DB::table('Roles')->orderBy('id')->get(),
                 'task_states'    => DB::table('Task_states')->orderBy('id')->get(),
+                'professions'    => DB::table('Professions')->orderBy('id')->get(),
             ];
 
             return response()->json([
