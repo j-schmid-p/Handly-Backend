@@ -60,6 +60,11 @@ class AuthController extends Controller
             DB::table('Client')->insert([
                 'app_user_id'=> $appUserId
             ]);
+
+            Mail::raw("¡Hola " . $request->name . "! Bienvenido a Handly.\n\nTu código de verificación de 6 dígitos es: " . $codigoVerificacion . "\n\nPor favor, introdúcelo en la aplicación para activar tu cuenta.", function ($message) use ($request) {
+                $message->to($request->email)
+                        ->subject('Código de Verificación - Handly');
+            });
             
             // esto solo si lo demas se hizo bien
             DB::commit();
@@ -142,6 +147,11 @@ class AuthController extends Controller
                     'profession_id'=>$professionId
                 ]);
             }
+
+            Mail::raw("¡Hola " . $request->name . "! Bienvenido a Handly.\n\nTu código de verificación de 6 dígitos es: " . $codigoVerificacion . "\n\nPor favor, introdúcelo en la aplicación para activar tu perfil profesional.", function ($message) use ($request) {
+                $message->to($request->email)
+                        ->subject('Activa tu cuenta profesional - Handly');
+            });
 
             DB::commit();
 
