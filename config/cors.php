@@ -19,7 +19,14 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    'allowed_origins' => [
+        'http://localhost:8100',   // Para que siga funcionando en PC
+        'https://localhost',       // Para Android
+        'http://localhost',        // Por si acaso
+        'capacitor://localhost',   // Para iPhone
+        'ionic://localhost'
+    ],
+
 
     'allowed_origins_patterns' => [],
 
